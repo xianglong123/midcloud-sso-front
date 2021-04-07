@@ -9,8 +9,8 @@
   <div>
     <div class="g-center login-page" @keyup.enter="login">
       <el-form class="login-form">
-        <h1 class="main-title">Vue-Access-Control</h1>
-        <p class="des">Frontend access control framework based Vue</p>
+        <h1 class="main-title">云服务应用统一门户</h1>
+        <p class="des">Cloud service application unified portal</p>
         <el-form-item>
           <el-input
             :autofocus="true"
@@ -28,21 +28,8 @@
           </el-input>
         </el-form-item>
         <el-form-item>
-          <el-button style="width:100%" @click.native="login" type="primary" :loading="isBtnLoading">{{btnText}}</el-button>
+          <el-button style="width:100%" @click.native="login" type="primary">{{btnText}}</el-button>
         </el-form-item>
-        <el-row style="text-align:center">
-          <el-col :span="8">
-            <a href="https://github.com/tower1229/Vue-Access-Control" target="_blank"><el-button type="text" icon="el-icon-info">Github</el-button></a>
-          </el-col>
-          <el-col :span="8">
-            <a href="https://refined-x.com/2017/11/28/Vue2.0%E7%94%A8%E6%88%B7%E6%9D%83%E9%99%90%E6%8E%A7%E5%88%B6%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/" target="_blank"><el-button type="text" icon="el-icon-info">介绍</el-button></a>
-          </el-col>
-          <el-col :span="8">
-            <a href="https://refined-x.com/" target="_blank"><el-button type="text" icon="el-icon-info">博客</el-button></a>
-          </el-col>
-          
-        </el-row>
-        
       </el-form>
     </div>
   </div>
@@ -50,21 +37,21 @@
 
 <script>
 import axios from 'axios';
-import CryptoJS from "crypto-js";
+import qs from 'qs'
 import * as util from '../assets/util.js';
 //登录
 const requestLogin = params => {
-  let words = CryptoJS.enc.Utf8.parse(params.password);
-  let base64 = CryptoJS.enc.Base64.stringify(words);
-  params.password = base64;
-  return axios.get(`http://rap2api.taobao.org/app/mock/224/web`, {params})
+  // let words = CryptoJS.enc.Utf8.parse(params.password);
+  // let base64 = CryptoJS.enc.Base64.stringify(words);
+  // params.password = base64;
+  return axios.post(`/api/xxl-sso-server/app/login`, qs.stringify(params))
 };
 
 export default {
   data() {
     return {
-      username: '',
-      password: '',
+      username: 'root',
+      password: '123456',
       isBtnLoading: false
     };
   },
@@ -86,12 +73,13 @@ export default {
         return;
       }
 
-      let loginParams = {name: vm.username, password: vm.password};
+      let loginParams = {username: vm.username, password: vm.password};
       vm.isBtnLoading = true;
       requestLogin(loginParams).then(res => {
         vm.isBtnLoading = false;
-        if(res.data.token){
-          util.session('token', res.data);
+        console.log(res)
+        if(res.data.data){
+          util.session('token', res.data.data);
           vm.$emit('login', vm.$router.currentRoute.query.from);
         }else{
           return Promise.reject({

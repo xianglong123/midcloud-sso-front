@@ -5,33 +5,50 @@ export default [{
   name: '首页',
   component: (resolve) => require(['../views/index.vue'], resolve),
   children: [{
-    path: '/roles',
-    name: '平台-角色管理',
-    meta: {
-      name: '角色管理'
-    },
-    component: (resolve) => require(['../views/roles.vue'], resolve)
-  }, {
-    path: '/accounts',
-    name: '平台-账号管理',
-    meta: {
-      name: '账号管理'
-    },
-    component: (resolve) => require(['../views/accounts.vue'], resolve)
-  }, {
-    path: '/goods',
-    name: '商品管理',
+    path: '/rabbitmq',
+    name: 'rabbitmq服务',
     meta: {
       icon: '&#xe62e;'
     },
     component: Abstract,
     children: [{
-      path: 'list',
-      name: '商品信息',
+      path: 'apply',
+      name: 'MQ工单申请',
       meta: {
-        
       },
-      component: (resolve) => require(['../views/goods-list.vue'], resolve)
+      component: (resolve) => require(['../views/redirect.vue'], resolve)
+    }, {
+      path: 'instance',
+      name: 'MQ实例列表',
+      meta: {
+      },
+      component: (resolve) => require(['../views/redirect.vue'], resolve)
+    }, {
+      path: 'order',
+      name: 'MQ工单列表',
+      meta: {
+      },
+      component: (resolve) => require(['../views/redirect.vue'], resolve)
+    }, {
+      path: 'manager',
+      name: 'MQ系统管理',
+      meta: {
+      },
+      component: (resolve) => require(['../views/redirect.vue'], resolve)
+    }]
+  }, {
+    path: '/redis',
+    name: 'redis服务',
+    meta: {
+      icon: '&#xe62e;'
+    },
+    component: Abstract,
+    children: [{
+      path: 'apply',
+      name: 'Redis工单申请',
+      meta: {
+      },
+      component: (resolve) => require(['../views/redirect.vue'], resolve)
     }]
   }]
 }];

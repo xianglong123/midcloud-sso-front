@@ -7,13 +7,13 @@
 </template>
 
 <script>
-import Vue from 'vue';
-import instance from './api';
-import AllRoutesData from './router/fullpath';
-import * as util from './assets/util.js';
+  import Vue from 'vue';
+  import instance from './api';
+  import AllRoutesData from './router/fullpath';
+  import * as util from './assets/util.js';
 
 
-export default {
+  export default {
   data() {
     return {
       menuData: null,
@@ -24,7 +24,7 @@ export default {
     setInterceptor: function(resourcePermission) {
       instance.interceptors.request.use(config => {
         // Get request path
-        
+
         let perName = config.url.replace(config.baseURL, '').split('?')[0];
         //RESTful type 1 /path/**
         let reg1 = perName.match(/^(\/[^\/]+\/)[^\/]+$/);
@@ -38,7 +38,7 @@ export default {
         }
 
         // Check permissions
-        
+
         if (!resourcePermission[config.method + ',' + perName]) {
           this.$message({
             message: '无访问权限，请联系企业管理员',
@@ -76,6 +76,7 @@ export default {
         array.map(key => {
           if (key.route) {
             let hashKey = ((base ? base + '/' : '') + key.route).replace(/^\//, '');
+            let code = key.code;
             routeHash['/' + hashKey] = true;
             if (Array.isArray(key.children)) {
               setMenu2Hash(key.children, (base ? base + '/' : '') + key.route);
@@ -84,12 +85,12 @@ export default {
         });
       };
       if (Array.isArray(userPermissions.menus)) {
-      /*
-      * Input Like this: 
+     /*
+      * Input Like this:
       * [{
       *   id: "2c9180895e13261e015e13469b7e0000",
       *   name: "账户管理",
-      *   parent_id: "2c9180895e13261e015e13469b7e0000",
+      *   parentId: "2c9180895e13261e015e13469b7e0000",
       *   route: "some-route"
       * }]
       */
@@ -99,16 +100,46 @@ export default {
       // Get hash structure
       return routeHash;
     },
-    extendRoutes: function(routePermission) {
+    getCodes: function(userPermissions) {
+      let routeHash = {};
+      let setMenu2Hash = function(array, base) {
+        array.map(key => {
+          if (key.route) {
+            let hashKey = ((base ? base + '/' : '') + key.route).replace(/^\//, '');
+            let code = key.code;
+            routeHash['/' + hashKey] = code;
+            if (Array.isArray(key.children)) {
+              setMenu2Hash(key.children, (base ? base + '/' : '') + key.route);
+            }
+          }
+        });
+      };
+      if (Array.isArray(userPermissions.menus)) {
+        /*
+         * Input Like this:
+         * [{
+         *   id: "2c9180895e13261e015e13469b7e0000",
+         *   name: "账户管理",
+         *   parent_id: "2c9180895e13261e015e13469b7e0000",
+         *   route: "some-route"
+         * }]
+         */
+        let arrayMenus = util.buildMenu(userPermissions.menus);
+        setMenu2Hash(arrayMenus);
+      }
+      // Get hash structure
+      return routeHash;
+    },
+    extendRoutes: function(routePermission, codePermission) {
 
       // Filtering local routes, get actual routing
-      
       let actualRouter = [];
       let findLocalRoute = function(array, base) {
         let replyResult = [];
         array.forEach(route => {
           let pathKey = (base ? base + '/' : '') + route.path;
           if (routePermission[pathKey]) {
+            route.meta.code = codePermission[pathKey];
             if (Array.isArray(route.children)) {
               route.children = findLocalRoute(route.children, (base ? base + '/' : '') + route.path);
             }
@@ -122,7 +153,7 @@ export default {
         }
       }
       findLocalRoute(AllRoutesData[0].children);
-      
+
       // If the user does not have any routing authority
 
       if (!actualRouter || !actualRouter.length) {
@@ -131,7 +162,7 @@ export default {
         // Interface hints
         return document.body.innerHTML = ('<h1>账号访问受限，请联系系统管理员！</h1>');
       }
-      
+
       actualRouter = actualRouter.map(e => {
 
         // Copy 'children' to 'meta' for rendering menu.(This step is optional.)
@@ -154,7 +185,7 @@ export default {
       }]));
 
       // Save information for rendering menu.(This step is optional.)
-      
+
       this.$root.menuData = actualRouter;
 
     },
@@ -165,8 +196,10 @@ export default {
       * Check whether the user has access
       */
 
+
       let localUser = util.session('token');
-      if (!localUser || !localUser.token) {
+
+      if (!localUser) {
         return vm.$router.push({ path: '/login', query: { from: vm.$router.currentRoute.path } });
       }
 
@@ -175,20 +208,21 @@ export default {
       * Set Authorization
       */
 
-      instance.defaults.headers.common['Authorization'] = 'Bearer ' + localUser.token;
+      instance.defaults.headers.common['Authorization'] = 'Bearer ' + localUser;
 
       /*
       * Step 2-1(This step is optional.)
       * Get user`s permissions
       * You can also get permission information upon user login, it depends on the implementation of the backend interface
       */
-      
-      instance.get(`/signin`, {
+
+      instance.get(`/app/getPermission`, {
         params: {
-          Authorization: localUser.token
+          sessionId: localUser
         }
       }).then((res) => {
-        let userPermissions = res.data;
+        console.log(res.data)
+        let userPermissions = res.data.data;
         // Save information, if it is used elsewhere.
         vm.$root.userData = userPermissions;
 
@@ -198,31 +232,39 @@ export default {
         * Like this:
         * { "get,/url1": true, "post,/url2": true, ... }
         */
-        
-        let resourcePermission = vm.getResources(userPermissions);
-        
+
+        // let resourcePermission = vm.getResources(userPermissions);
+
         /*
         * Step 4
         * Get routePermission form user permissions
         * Like this:
         * { "/route1": true, "/route2": true, ... }
         */
-        
+
         let routePermission = vm.getRoutes(userPermissions);
-        
+
+        /*
+        * Step 4.1
+        * Get routePermission form user permissions
+        * Like this:
+        * { "/route1": "ABC", "/route2": "DEF", ... }
+        */
+        let codePermission = vm.getCodes(userPermissions);
+
         /*
         * Step 5
         * Setting request permission control through resourcePermission
         */
 
-        vm.setInterceptor(resourcePermission);
-        
+        // vm.setInterceptor(resourcePermission);
+
         /*
         * Step 6
         * Adding routing privileges to users
         */
 
-        vm.extendRoutes(routePermission);
+        vm.extendRoutes(routePermission, codePermission);
 
         /*
         * Step 7
@@ -230,33 +272,33 @@ export default {
         * Input: Array, like this: ['get,/some-uri']
         * Output: Boolean
         */
-        
+
         Vue.prototype.$_has = function(rArray) {
-          let RequiredPermissions = [];
-          let permission = true;
-          
-          if (Array.isArray(rArray)) {
-            rArray.forEach(e => {
-              if(e && e.p){
-                RequiredPermissions = RequiredPermissions.concat(e.p);
-              }
-            });
-          } else {
-            if(rArray && rArray.p){
-              RequiredPermissions = rArray.p;
-            }
-            
-          }
-          
-          for(let i=0;i<RequiredPermissions.length;i++){
-            let p = RequiredPermissions[i];
-            if (!resourcePermission[p]) {
-              permission = false;
-              break;
-            }
-          }
-          
-          return permission;
+          // let RequiredPermissions = [];
+          // let permission = true;
+          //
+          // if (Array.isArray(rArray)) {
+          //   rArray.forEach(e => {
+          //     if(e && e.p){
+          //       RequiredPermissions = RequiredPermissions.concat(e.p);
+          //     }
+          //   });
+          // } else {
+          //   if(rArray && rArray.p){
+          //     RequiredPermissions = rArray.p;
+          //   }
+          //
+          // }
+          //
+          // for(let i=0;i<RequiredPermissions.length;i++){
+          //   let p = RequiredPermissions[i];
+          //   if (!resourcePermission[p]) {
+          //     permission = false;
+          //     break;
+          //   }
+          // }
+
+          return true;
         }
 
         typeof callback === 'function' && callback();
