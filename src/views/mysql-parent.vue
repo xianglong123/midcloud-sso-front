@@ -11,6 +11,7 @@
 <script>
     import instance from "../api";
     import * as util from "../assets/util";
+    import * as rsaEncrypt from '../assets/rsaEncrypt.js';
 
     export default {
         data() {
@@ -35,7 +36,8 @@
                                 sessionId: util.session('token')
                             }
                         }).then((res) => {
-                            redirectUrl_bank += '?username=' + res.data.data.username + '&password=' + res.data.data.password
+                            redirectUrl_bank += '?username=' + res.data.data.username + '&password=' + rsaEncrypt.encrypt(res.data.data.password)
+                            console.log(redirectUrl_bank)
                             window.open(redirectUrl_bank, '_blank')
                         })
 
