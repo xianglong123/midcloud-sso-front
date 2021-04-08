@@ -221,6 +221,7 @@
           sessionId: localUser
         }
       }).then((res) => {
+        debugger;
         console.log(res.data)
         let userPermissions = res.data.data;
         // Save information, if it is used elsewhere.

@@ -3,45 +3,56 @@
 </style>
 
 <template>
-  <div>
-    <iframe :src="redirectUrl" id="mobsf" scrolling="yes" frameborder="0" style="width: 100%; height: 700px" ></iframe>
-  </div>
+    <div>
+        <iframe :src="redirectUrl" id="mobsf" scrolling="yes" frameborder="0" style="width: 100%; height: 700px"></iframe>
+    </div>
 </template>
 
 <script>
-  import instance from '../api';
-export default {
-  data() {
-    return {
-      redirectUrl: 'http://127.0.0.1:8000/auth/login?username=dba&password=J6wn6+TlK6rDCaW+aPE1AeoyMIemEDA47UZvtWj3ocsaZLLURVao0nG34t+z+lUeCEpIvmwbSIZ7q9B17gzu8Q==',
-    };
-  },
-  methods: {
-    initData() {
-      instance.get(`/app/getUrl`, {
-        params: {
-          code: this.$route.meta.code
-        }
-      }).then((res) => {
-        console.log( "*********" + res.data.data)
-        if(res.data.data === '') {
-          this.redirectUrl = 'http://localhost:8090/#/404'
-        } else {
-          this.redirectUrl = res.data.data;
-        }
-      });
-    }
-  },
-  created() {
-    // this.initData();
-    //http://127.0.0.1:8000/auth/login
+    import instance from "../api";
+    import * as util from "../assets/util";
 
-  },
-  // watch: {
-  //   //监听相同路由下参数变化的时候，从而实现异步刷新
-  //   '$route'(to,from){
-  //     this.initData();
-  //   },
-  // },
-};
+    export default {
+        data() {
+            return {
+                redirectUrl: ''
+            };
+        },
+        methods: {
+            initData() {
+                let redirectUrl_bank = '';
+                instance.get(`/app/getUrl`, {
+                    params: {
+                        code: this.$route.meta.code
+                    }
+                }).then((res) => {
+                    if (res.data.data === '') {
+                        this.redirectUrl = 'http://localhost:8090/#/404'
+                    } else {
+                        redirectUrl_bank += res.data.data
+                        instance.get(`/app/getInfoBySessionId`, {
+                            params: {
+                                sessionId: util.session('token')
+                            }
+                        }).then((res) => {
+                            redirectUrl_bank += '?username=' + res.data.data.username + '&password=' + res.data.data.password
+                            window.open(redirectUrl_bank, '_blank')
+                        })
+
+                        // this.redirectUrl = res.data.data;
+                    }
+                });
+
+            }
+        },
+        created() {
+            this.initData();
+        },
+        watch: {
+            //监听相同路由下参数变化的时候，从而实现异步刷新
+            '$route'(to, from) {
+                this.initData();
+            },
+        },
+    };
 </script>
