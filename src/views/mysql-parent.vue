@@ -37,7 +37,10 @@
                             }
                         }).then((res) => {
                             redirectUrl_bank += '?username=' + res.data.data.username + '&password=' + rsaEncrypt.encrypt(res.data.data.password)
-                            console.log(redirectUrl_bank)
+                            // let a = 'GFX98nsEDIdQ+VZwkseXrSgFQiEQHLcp9s1MqxDjgE6nhMs4HAhHecSTpG40RygS55KnCxnTOahqX2e1BI7Gew=='
+                            // debugger;
+                            // console.log(rsaEncrypt.decrypt(a))
+                            // console.log(redirectUrl_bank)
                             window.open(redirectUrl_bank, '_blank')
                         })
 
